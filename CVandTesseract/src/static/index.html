@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV</title>
+    <!-- v5 -->
+    <!-- <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script> -->
+    <!-- <script type="module">
+        (async () => {
+            const worker = await Tesseract.createWorker('eng+kor');
+            const ret = await worker.recognize('./test2.png');
+            console.log(ret.data.text);
+            await worker.terminate();
+        })();
+    </script> -->
+
+</head>
+<body>
+    <img src="./testbig.png" id="testInput">
+    <button onclick="handleClick()">흑백으로 변환</button>
+    <button onclick="testMSER()">MSER 테스트</button>
+    <canvas></canvas>
+    <script src ='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script type="module">
+        const tesseractImg = (async() => {
+            let worker = await Tesseract.createWorker('eng+kor');
+            let ret = await worker.recognize("./testresult.png");
+            console.log(ret.data.text);
+            await worker.terminate();
+        })();
+    </script>
+    <script async src="./engine/opencv.js" type="text/javascript"></script>
+    <script>
+        var Module = {
+            onRuntimeInitialized() {
+                console.log('OpenCV.js is ready.');
+            }
+        }
+
+        const handleClick = () => {
+            const canvasInput = document.querySelector('img');
+            const canvasOutput = document.querySelector('canvas');
+
+            let src = cv.imread(canvasInput);
+            let dst = new cv.Mat();
+
+            cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+            cv.imshow(canvasOutput, dst);
+            
+
+            //Dispose memory.
+            src.delete();
+            dst.delete();
+        }
+
+        //컨투어 뽑기
+        const testMSER = () => {
+
+            const canvasOutput = document.querySelector('canvas');
+
+            //이미지 불러오기 및 전처리
+            const imgInput = document.getElementById('testInput');
+            let src = cv.imread(imgInput);
+            let dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
+            cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+            cv.threshold(src, src, 120, 200, cv.THRESH_BINARY);
+
+            //컨투어 찾기
+            let contours = new cv.MatVector();
+            let hierachy = new cv.Mat();
+            
+            cv.findContours(src, contours, hierachy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+            for (let i = 0; i < contours.size(); ++i) {
+                let color = new cv.Scalar(Math.round(255), Math.round(255),
+                Math.round(55));
+                cv.drawContours(dst, contours, i, color, 1, cv.LINE_8, hierachy, 100);
+            }
+            
+
+            cv.imshow(canvasOutput, dst);
+            tesseractImg(dst);
+
+            src.delete(); 
+            dst.delete(); 
+            contours.delete(); 
+            hierachy.delete();
+        }
+    </script>
+</body>
+</html>
